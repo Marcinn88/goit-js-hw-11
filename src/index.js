@@ -1,90 +1,169 @@
-import Notiflix from 'notiflix';
-import { PixabayApi } from './api';
-import debounce from 'lodash.debounce';
-const DEBOUNCE_DELAY = 300;
-const formEl = document.querySelector(`.search-form`);
-const formElBtn = document.querySelector(`.search-form button`);
-const galleryEl = document.querySelector(`.gallery`);
-const pixabayApi = new PixabayApi();
+import './sass/index.scss';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
-// console.log short function.
-const cl = a => {
-  console.log(a);
+import axios from 'axios';
+
+class NewsApiService {
+  constructor() {
+    this.searchQuery = '';
+    this.page = 1;
+    this.PER_PAGE = 40;
+  }
+  async fetchGallery() {
+    const axiosOptions = {
+      method: 'get',
+      url: 'https://pixabay.com/api/',
+      params: {
+        key: '34986976-bc41fc690d31dec5284951a8a',
+        q: `${this.searchQuery}`,
+        image_type: 'photo',
+        orientation: 'horizontal',
+        safesearch: true,
+        page: `${this.page}`,
+        per_page: `${this.PER_PAGE}`,
+      },
+    };
+    try {
+      const response = await axios(axiosOptions);
+
+      const data = response.data;
+
+      this.incrementPage();
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  incrementPage() {
+    this.page += 1;
+  }
+  resetPage() {
+    this.page = 1;
+  }
+  resetEndOfHits() {
+    this.endOfHits = false;
+  }
+  get query() {
+    return this.searchQuery;
+  }
+  set query(newQuery) {
+    this.searchQuery = newQuery;
+  }
+}
+
+let lightbox = new SimpleLightbox('.photo-card a', {
+  captions: true,
+  captionsData: 'alt',
+  captionDelay: 250,
+});
+const refs = {
+  searchForm: document.querySelector('.search-form'),
+  galleryContainer: document.querySelector('.gallery'),
+  loadMoreBtn: document.querySelector('.load-more'),
 };
+let isShown = 0;
+const newsApiService = new NewsApiService();
 
-cl(formEl);
-cl(formElBtn);
-cl(galleryEl);
-cl(pixabayApi);
-cl(pixabayApi.page);
+refs.searchForm.addEventListener('submit', onSearch);
+refs.loadMoreBtn.addEventListener('click', onLoadMore);
 
-const cleanMarkup = ref => (ref.innerHTML = '');
+const options = {
+  rootMargin: '50px',
+  root: null,
+  threshold: 0.3,
+};
+const observer = new IntersectionObserver(onLoadMore, options);
 
-const inputHandler = e => {
-  const textInput = e.target.value.trim();
+function onSearch(e) {
+  e.preventDefault();
 
-  if (!textInput) {
-    cleanMarkup(listEl);
-    cleanMarkup(infoEl);
+  refs.galleryContainer.innerHTML = '';
+  newsApiService.query = e.currentTarget.elements.searchQuery.value.trim();
+  newsApiService.resetPage();
+
+  if (newsApiService.query === '') {
+    Notify.warning('Please, fill the main field');
     return;
-  } else
-    fetchCountries(textInput)
-      .then(data => {
-        console.log(data);
-        if (data.length > 10) {
-          Notify.info(
-            'Too many matches found. Please enter a more specific name'
-          );
-          return;
-        }
-        renderMarkup(data);
-      })
-      .catch(err => {
-        cleanMarkup(listEl);
-        cleanMarkup(infoEl);
-        Notify.failure('Oops, there is no country with that name');
-      });
-};
+  }
 
-//kodowanie
+  isShown = 0;
+  fetchGallery();
+  onRenderGallery(hits);
+}
 
-// const options = {
-//   root: null,
-//   rootMargin: '0px 0px 100px 0px',
-//   threshold: 1,
-// };
+function onLoadMore() {
+  newsApiService.incrementPage();
+  fetchGallery();
+}
 
-//
+async function fetchGallery() {
+  refs.loadMoreBtn.classList.add('is-hidden');
 
-// const userList = document.querySelector('.user-list');
-// console.log(userList);
+  const r = await newsApiService.fetchGallery();
+  const { hits, total } = r;
+  isShown += hits.length;
 
-// formElBtn.addEventListener('click', () => {
-//   fetchUsers()
-//     .then(users => renderUserList(users))
-//     .catch(error => console.log(error));
-// });
+  if (!hits.length) {
+    Notify.failure(
+      `Sorry, there are no images matching your search query. Please try again.`
+    );
+    refs.loadMoreBtn.classList.add('is-hidden');
+    return;
+  }
 
-// function fetchUsers() {
-//   return fetch('https://jsonplaceholder.typicode.com/users').then(response => {
-//     if (!response.ok) {
-//       throw new Error(response.status);
-//     }
-//     return response.json();
-//   });
-// }
+  onRenderGallery(hits);
+  isShown += hits.length;
 
-// function renderUserList(users) {
-//   const markup = users
-//     .map(user => {
-//       return `<li>
-//           <p><b>Name</b>: ${user.name}</p>
-//           <p><b>Email</b>: ${user.email}</p>
-//           <p><b>Company</b>: ${user.company.name}</p>
-//         </li>`;
-//     })
-//     .join('');
-//   userList.innerHTML = markup;
-// }
+  if (isShown < total) {
+    Notify.success(`Hooray! We found ${total} images !!!`);
+    refs.loadMoreBtn.classList.remove('is-hidden');
+  }
 
-formEl.addEventListener('input', debounce(inputHandler, DEBOUNCE_DELAY));
+  if (isShown >= total) {
+    Notify.info("We're sorry, but you've reached the end of search results.");
+  }
+}
+
+function onRenderGallery(elements) {
+  const markup = elements
+    .map(
+      ({
+        webformatURL,
+        largeImageURL,
+        tags,
+        likes,
+        views,
+        comments,
+        downloads,
+      }) => {
+        return `<div class="photo-card">
+    <a href="${largeImageURL}">
+      <img class="photo-img" src="${webformatURL}" alt="${tags}" loading="lazy" />
+    </a>
+    <div class="info">
+      <p class="info-item">
+        <b>Likes</b>
+        ${likes}
+      </p>
+      <p class="info-item">
+        <b>Views</b>
+        ${views}
+      </p>
+      <p class="info-item">
+        <b>Comments</b>
+        ${comments}
+      </p>
+      <p class="info-item">
+        <b>Downloads</b>
+        ${downloads}
+      </p>
+    </div>
+    </div>`;
+      }
+    )
+    .join('');
+  refs.galleryContainer.insertAdjacentHTML('beforeend', markup);
+  lightbox.refresh();
+}
