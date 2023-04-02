@@ -1,77 +1,90 @@
-import SimpleLightbox from 'simplelightbox';
-import 'simplelightbox/dist/simple-lightbox.min.css';
 import Notiflix from 'notiflix';
 import { PixabayApi } from './api';
-import createMarkup from './gallery.hbs';
-
-const submitBtnEl = document.querySelector('.search-form');
-const galleryEl = document.querySelector('.gallery');
-const targetEl = document.querySelector('.js-guard');
-
+import debounce from 'lodash.debounce';
+const DEBOUNCE_DELAY = 300;
+const formEl = document.querySelector(`.search-form`);
+const formElBtn = document.querySelector(`.search-form button`);
+const galleryEl = document.querySelector(`.gallery`);
 const pixabayApi = new PixabayApi();
-const gallery = new SimpleLightbox('.gallery a');
 
-const observerOptions = {
-  root: null,
-  rootMargin: '0px 0px 100px 0px',
-  threshold: 1,
-};
-const observer = new IntersectionObserver(async enteries => {
-  if (enteries[0].isIntersecting) {
-    try {
-      pixabayApi.page += 1;
-
-      const { data } = await pixabayApi.fetchPhoto();
-      galleryEl.insertAdjacentHTML('beforeend', createMarkup(data.hits));
-      gallery.refresh();
-
-      if (data.hits.length <= 0) {
-        observer.unobserve(targetEl);
-        Notiflix.Notify.info(
-          "We're sorry, but you've reached the end of search results."
-        );
-      }
-    } catch (error) {
-      Notiflix.Notify.failure(
-        'Sorry, there are no images matching your search query. Please try again.'
-      );
-    }
-  }
-}, observerOptions);
-
-const onSearchImagesSubmit = async event => {
-  event.preventDefault();
-  observer.unobserve(targetEl);
-
-  pixabayApi.page = 1;
-  galleryEl.innerHTML = '';
-  pixabayApi.searchQuery = event.currentTarget.elements.searchQuery.value;
-
-  try {
-    if (pixabayApi.searchQuery !== '') {
-      const { data } = await pixabayApi.fetchPhoto();
-
-      if (data.totalHits === 0) {
-        Notiflix.Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
-        return;
-      }
-      if (data.totalHits === 1) {
-        galleryEl.insertAdjacentHTML('beforeend', createMarkup(data.hits));
-        return;
-      }
-
-      galleryEl.insertAdjacentHTML('beforeend', createMarkup(data.hits));
-      Notiflix.Notify.success(`Hooray! We found ${data.totalHits} images.`);
-      gallery.refresh();
-      observer.observe(targetEl);
-    }
-  } catch (error) {
-    Notiflix.Notify.failure(
-      'Sorry, there are no images matching your search query. Please try again.'
-    );
-  }
+// console.log short function.
+const cl = a => {
+  console.log(a);
 };
 
-submitBtnEl.addEventListener('submit', onSearchImagesSubmit);
+cl(formEl);
+cl(formElBtn);
+cl(galleryEl);
+cl(pixabayApi);
+cl(pixabayApi.page);
+
+const cleanMarkup = ref => (ref.innerHTML = '');
+
+const inputHandler = e => {
+  const textInput = e.target.value.trim();
+
+  if (!textInput) {
+    cleanMarkup(listEl);
+    cleanMarkup(infoEl);
+    return;
+  } else
+    fetchCountries(textInput)
+      .then(data => {
+        console.log(data);
+        if (data.length > 10) {
+          Notify.info(
+            'Too many matches found. Please enter a more specific name'
+          );
+          return;
+        }
+        renderMarkup(data);
+      })
+      .catch(err => {
+        cleanMarkup(listEl);
+        cleanMarkup(infoEl);
+        Notify.failure('Oops, there is no country with that name');
+      });
+};
+
+//kodowanie
+
+// const options = {
+//   root: null,
+//   rootMargin: '0px 0px 100px 0px',
+//   threshold: 1,
+// };
+
+//
+
+// const userList = document.querySelector('.user-list');
+// console.log(userList);
+
+// formElBtn.addEventListener('click', () => {
+//   fetchUsers()
+//     .then(users => renderUserList(users))
+//     .catch(error => console.log(error));
+// });
+
+// function fetchUsers() {
+//   return fetch('https://jsonplaceholder.typicode.com/users').then(response => {
+//     if (!response.ok) {
+//       throw new Error(response.status);
+//     }
+//     return response.json();
+//   });
+// }
+
+// function renderUserList(users) {
+//   const markup = users
+//     .map(user => {
+//       return `<li>
+//           <p><b>Name</b>: ${user.name}</p>
+//           <p><b>Email</b>: ${user.email}</p>
+//           <p><b>Company</b>: ${user.company.name}</p>
+//         </li>`;
+//     })
+//     .join('');
+//   userList.innerHTML = markup;
+// }
+
+formEl.addEventListener('input', debounce(inputHandler, DEBOUNCE_DELAY));
