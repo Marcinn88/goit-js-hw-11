@@ -74,7 +74,6 @@ const options = {
   root: null,
   threshold: 0.3,
 };
-const observer = new IntersectionObserver(onLoadMore, options);
 
 function onSearch(e) {
   e.preventDefault();
@@ -90,7 +89,6 @@ function onSearch(e) {
 
   isShown = 0;
   fetchGallery();
-  onRenderGallery(hits);
 }
 
 function onLoadMore() {
