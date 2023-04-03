@@ -84,7 +84,6 @@ function onSearch(e) {
 
   isShown = 0;
   fetchGallery();
-  console.log(fetchGallery());
 }
 
 function onLoadMore() {
