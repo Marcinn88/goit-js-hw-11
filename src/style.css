@@ -5,6 +5,7 @@ body {
 }
 .search-form {
   width: 100%;
+  min-width: 500px;
   padding: 50px;
   display: flex;
   justify-content: center;
