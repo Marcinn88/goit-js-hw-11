@@ -69,12 +69,6 @@ const newsApiService = new NewsApiService();
 refs.searchForm.addEventListener('submit', onSearch);
 refs.loadMoreBtn.addEventListener('click', onLoadMore);
 
-const options = {
-  rootMargin: '50px',
-  root: null,
-  threshold: 0.3,
-};
-
 function onSearch(e) {
   e.preventDefault();
 
@@ -84,11 +78,13 @@ function onSearch(e) {
 
   if (newsApiService.query === '') {
     Notify.warning('Please, fill the main field');
+    refs.loadMoreBtn.classList.add('is-hidden');
     return;
   }
 
   isShown = 0;
   fetchGallery();
+  console.log(fetchGallery());
 }
 
 function onLoadMore() {
@@ -121,6 +117,7 @@ async function fetchGallery() {
 
   if (isShown >= total) {
     Notify.info("We're sorry, but you've reached the end of search results.");
+    refs.loadMoreBtn.classList.add('is-hidden');
   }
 }
 
