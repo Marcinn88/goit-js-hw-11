@@ -90,6 +90,7 @@ function onSearch(e) {
 function onLoadMore() {
   newsApiService.incrementPage();
   fetchGallery();
+  console.log(isShown)
 }
 
 async function fetchGallery() {
@@ -111,11 +112,13 @@ async function fetchGallery() {
   isShown += hits.length;
 
   if (isShown < total) {
+      console.log(isShown)
     Notify.success(`Hooray! We found ${total} images !!!`);
     refs.loadMoreBtn.classList.remove('is-hidden');
   }
 
   if (isShown >= total) {
+      console.log(isShown)
     Notify.info("We're sorry, but you've reached the end of search results.");
     refs.loadMoreBtn.classList.add('is-hidden');
   }
