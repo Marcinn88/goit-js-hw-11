@@ -110,6 +110,7 @@ async function fetchGallery() {
 
   onRenderGallery(hits);
   isShown += hits.length;
+    console.log(isShown)
 
   if (isShown < total) {
       console.log(isShown)
