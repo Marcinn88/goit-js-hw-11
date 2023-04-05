@@ -31,6 +31,7 @@ class NewsApiService {
       const data = response.data;
 
       this.incrementPage();
+      console.log(data);
       return data;
     } catch (error) {
       console.error(error);
