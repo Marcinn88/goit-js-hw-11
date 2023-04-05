@@ -96,7 +96,7 @@ async function fetchGallery() {
 
   const r = await newsApiService.fetchGallery();
   const { hits, total } = r;
-  isShown += hits.length;
+  //isShown += hits.length;
 
   if (!hits.length) {
     Notify.failure(
@@ -107,7 +107,7 @@ async function fetchGallery() {
   }
 
   onRenderGallery(hits);
-  //isShown += hits.length;
+  isShown += hits.length;
 
   if (isShown < total) {
     Notify.success(`Hooray! We found ${total} images !!!`);
