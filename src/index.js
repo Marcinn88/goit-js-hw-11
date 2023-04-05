@@ -31,7 +31,6 @@ class NewsApiService {
       const data = response.data;
 
       this.incrementPage();
-      console.log(data);
       return data;
     } catch (error) {
       console.error(error);
@@ -88,9 +87,7 @@ function onSearch(e) {
 }
 
 function onLoadMore() {
-  newsApiService.incrementPage();
   fetchGallery();
-  console.log(isShown)
 }
 
 async function fetchGallery() {
@@ -98,7 +95,7 @@ async function fetchGallery() {
 
   const r = await newsApiService.fetchGallery();
   const { hits, total } = r;
-  //isShown += hits.length;
+  isShown += hits.length;
 
   if (!hits.length) {
     Notify.failure(
@@ -109,17 +106,19 @@ async function fetchGallery() {
   }
 
   onRenderGallery(hits);
-  isShown += hits.length;
-    console.log(isShown)
 
   if (isShown < total) {
-      console.log(isShown)
-    Notify.success(`Hooray! We found ${total} images !!!`);
     refs.loadMoreBtn.classList.remove('is-hidden');
+    if (newsApiService.page === 2) {
+      Notify.success(`Hooray! We found ${total} images !!!`);
+    }
   }
 
   if (isShown >= total) {
-      console.log(isShown)
+    if (newsApiService.page === 2) {
+      Notify.success(`Hooray! We found ${total} images !!!`);
+      return;
+    }
     Notify.info("We're sorry, but you've reached the end of search results.");
     refs.loadMoreBtn.classList.add('is-hidden');
   }
